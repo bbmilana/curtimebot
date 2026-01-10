@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
-from telethon import TelegramClient, functions, types
+from telethon import TelegramClient, functions
 from telethon.sessions import StringSession
 import os
 
@@ -20,14 +20,18 @@ try:
 except:
     font = ImageFont.load_default()
 
-# текст по центру
-w, h = draw.textsize(now, font=font)
+# вычисляем ширину и высоту текста через textbbox
+bbox = draw.textbbox((0, 0), now, font=font)
+w = bbox[2] - bbox[0]
+h = bbox[3] - bbox[1]
+
+# рисуем текст по центру
 draw.text(((512-w)/2, (512-h)/2), now, fill="white", font=font)
 
 # сохраняем картинку
 img.save("avatar.jpg")
 
-# подключаемся к аккаунту
+# подключаемся к аккаунту и обновляем аватар
 with TelegramClient(StringSession(session), api_id, api_hash) as client:
     client.start()
     file = client.upload_file("avatar.jpg")
