@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
-from telethon import TelegramClient
+from telethon import TelegramClient, functions, types
 from telethon.sessions import StringSession
 import os
 
@@ -14,7 +14,7 @@ draw = ImageDraw.Draw(img)
 
 now = datetime.now().strftime("%H:%M")
 
-# используем шрифт, который есть в Ubuntu (на GitHub Actions)
+# используем шрифт Ubuntu
 try:
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 120)
 except:
@@ -27,6 +27,8 @@ draw.text(((512-w)/2, (512-h)/2), now, fill="white", font=font)
 # сохраняем картинку
 img.save("avatar.jpg")
 
-# подключаемся к аккаунту и меняем аватар
+# подключаемся к аккаунту
 with TelegramClient(StringSession(session), api_id, api_hash) as client:
-    client.upload_profile_photo("avatar.jpg")
+    client.start()
+    file = client.upload_file("avatar.jpg")
+    client(functions.photos.UploadProfilePhotoRequest(file=file))
