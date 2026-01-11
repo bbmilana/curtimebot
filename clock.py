@@ -15,27 +15,24 @@ SIZE = 256
 kst = pytz.timezone("Asia/Bishkek")
 avatar_path = "avatar.png"
 
-async def main():
+async def update_avatar():
     try:
         async with TelegramClient(StringSession(session), api_id, api_hash) as client:
             print("[INFO] TelegramClient запущен")
 
             # ===== Удаляем старые фото =====
             photos = await client.get_profile_photos('me')
-            print(f"[INFO] Всего фото профиля: {photos.total}")
-
             if photos.total > 0:
                 await client(functions.photos.DeletePhotosRequest(id=photos))
-                print(f"[INFO] Удалено старых фото: {photos.total}")
+            print(f"[INFO] Старые фото удалены: {photos.total}")
 
-            # ===== Текущее время KST =====
+            # ===== Текущее кыргызстанское время =====
             now = datetime.now(kst)
             t = now.strftime("%H:%M")
 
             # ===== Создаем PNG =====
             img = Image.new("RGB", (SIZE, SIZE), color=(0, 0, 0))
             draw = ImageDraw.Draw(img)
-
             try:
                 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 60)
             except:
@@ -49,18 +46,14 @@ async def main():
             img.save(avatar_path)
             print(f"[INFO] PNG создан: {avatar_path}, размер: {img.size}, время: {t}")
 
-            # ===== Минимальная пауза для гарантии готовности файла =====
-            await asyncio.sleep(0.5)
-
-            # ===== Загружаем новое фото =====
+            # ===== Загружаем новый аватар =====
             file = await client.upload_file(avatar_path)
             await client(functions.photos.UploadProfilePhotoRequest(file=file))
             print(f"[SUCCESS] Аватар обновлён: {datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC | {t} KST")
 
     except Exception as e:
         print(f"[ERROR] Ошибка: {e}")
-
     finally:
         print(f"[INFO] Workflow завершён: {datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC")
 
-asyncio.run(main())
+asyncio.run(update_avatar())
