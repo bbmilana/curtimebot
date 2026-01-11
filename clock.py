@@ -6,7 +6,7 @@ from telethon import TelegramClient, functions
 from telethon.sessions import StringSession
 import os
 
-# ===== GitHub Secrets =====
+# ===== Secrets =====
 api_id = int(os.environ["API_ID"])
 api_hash = os.environ["API_HASH"]
 session = os.environ["SESSION_STRING"]
@@ -14,7 +14,7 @@ session = os.environ["SESSION_STRING"]
 SIZE = 256
 kst = pytz.timezone("Asia/Bishkek")
 
-# ===== Текущее время Кыргызстана =====
+# ===== Текущее кыргызстанское время =====
 now = datetime.now(kst)
 t = now.strftime("%H:%M")
 
@@ -41,34 +41,31 @@ async def main():
         async with TelegramClient(StringSession(session), api_id, api_hash) as client:
             print("[INFO] TelegramClient запущен")
 
-            # ===== Получаем все фото профиля =====
+            # ===== Удаляем старые фото =====
             photos = await client.get_profile_photos('me')
             print(f"[INFO] Всего фото профиля: {photos.total}")
 
-            # ===== Удаляем старые фото =====
             if photos.total > 0:
                 await client(functions.photos.DeletePhotosRequest(id=photos))
                 print(f"[INFO] Удалено старых фото: {photos.total}")
 
-            # ===== Пауза для гарантии готовности файла =====
-            await asyncio.sleep(2)
+            # ===== Минимальная пауза для гарантии готовности файла =====
+            await asyncio.sleep(1)
 
             # ===== Загружаем новое фото =====
-            try:
-                file = await client.upload_file(avatar_path)
-                print(f"[INFO] PNG файл загружен: {avatar_path}")
+            file = await client.upload_file(avatar_path)
+            print(f"[INFO] PNG файл загружен: {avatar_path}")
 
-                result = await client(functions.photos.UploadProfilePhotoRequest(file=file))
-                print(f"[SUCCESS] Аватар обновлён: {datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC")
+            await client(functions.photos.UploadProfilePhotoRequest(file=file))
+            print(f"[SUCCESS] Аватар обновлён")
 
-            except Exception as e:
-                print(f"[ERROR] Не удалось загрузить аватар: {e}")
+            # ===== Логи времени =====
+            print(f"[INFO] Workflow сработал: {datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC | {datetime.now(kst).strftime('%Y-%m-%d %H:%M:%S')} KST")
 
     except Exception as e:
-        print(f"[ERROR] Ошибка TelegramClient: {e}")
+        print(f"[ERROR] Ошибка: {e}")
 
     finally:
         print(f"[INFO] Workflow завершён: {datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC")
 
-# ===== Запуск =====
 asyncio.run(main())
