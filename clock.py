@@ -13,28 +13,7 @@ session = os.environ["SESSION_STRING"]
 
 SIZE = 256
 kst = pytz.timezone("Asia/Bishkek")
-
-# ===== Текущее кыргызстанское время =====
-now = datetime.now(kst)
-t = now.strftime("%H:%M")
-
-# ===== Создаем PNG =====
-img = Image.new("RGB", (SIZE, SIZE), color=(0, 0, 0))
-draw = ImageDraw.Draw(img)
-
-try:
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 60)
-except:
-    font = ImageFont.load_default()
-
-bbox = draw.textbbox((0, 0), t, font=font)
-w = bbox[2] - bbox[0]
-h = bbox[3] - bbox[1]
-draw.text(((SIZE - w) / 2, (SIZE - h) / 2), t, fill=(255, 255, 255), font=font)
-
 avatar_path = "avatar.png"
-img.save(avatar_path)
-print(f"[INFO] PNG создан: {avatar_path}, размер: {img.size}, время: {t}")
 
 async def main():
     try:
@@ -49,18 +28,34 @@ async def main():
                 await client(functions.photos.DeletePhotosRequest(id=photos))
                 print(f"[INFO] Удалено старых фото: {photos.total}")
 
+            # ===== Текущее время KST =====
+            now = datetime.now(kst)
+            t = now.strftime("%H:%M")
+
+            # ===== Создаем PNG =====
+            img = Image.new("RGB", (SIZE, SIZE), color=(0, 0, 0))
+            draw = ImageDraw.Draw(img)
+
+            try:
+                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 60)
+            except:
+                font = ImageFont.load_default()
+
+            bbox = draw.textbbox((0, 0), t, font=font)
+            w = bbox[2] - bbox[0]
+            h = bbox[3] - bbox[1]
+            draw.text(((SIZE - w) / 2, (SIZE - h) / 2), t, fill=(255, 255, 255), font=font)
+
+            img.save(avatar_path)
+            print(f"[INFO] PNG создан: {avatar_path}, размер: {img.size}, время: {t}")
+
             # ===== Минимальная пауза для гарантии готовности файла =====
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
 
             # ===== Загружаем новое фото =====
             file = await client.upload_file(avatar_path)
-            print(f"[INFO] PNG файл загружен: {avatar_path}")
-
             await client(functions.photos.UploadProfilePhotoRequest(file=file))
-            print(f"[SUCCESS] Аватар обновлён")
-
-            # ===== Логи времени =====
-            print(f"[INFO] Workflow сработал: {datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC | {datetime.now(kst).strftime('%Y-%m-%d %H:%M:%S')} KST")
+            print(f"[SUCCESS] Аватар обновлён: {datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC | {t} KST")
 
     except Exception as e:
         print(f"[ERROR] Ошибка: {e}")
