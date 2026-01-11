@@ -11,16 +11,15 @@ api_id = int(os.environ["API_ID"])
 api_hash = os.environ["API_HASH"]
 session = os.environ["SESSION_STRING"]
 
-# ===== Размер аватарки =====
-SIZE = 256  # меньше, чтобы быстрее загружалось
+SIZE = 256
 kst = pytz.timezone("Asia/Bishkek")
 
-# ===== Получаем текущее время по Кыргызстану =====
+# ===== Текущее время Кыргызстана =====
 now = datetime.now(kst)
 t = now.strftime("%H:%M")
 
-# ===== Создаем PNG аватарку =====
-img = Image.new("RGB", (SIZE, SIZE), color=(0, 0, 0))  # черный фон
+# ===== Создаем PNG =====
+img = Image.new("RGB", (SIZE, SIZE), color=(0, 0, 0))
 draw = ImageDraw.Draw(img)
 
 try:
@@ -37,19 +36,24 @@ avatar_path = "avatar.png"
 img.save(avatar_path)
 print(f"PNG создан: {avatar_path}, размер: {img.size}, время: {t}")
 
-# ===== Асинхронная функция для Telethon с таймаутом =====
+# ===== Асинхронная функция с удалением старых фото =====
 async def main():
     async with TelegramClient(StringSession(session), api_id, api_hash) as client:
-        try:
-            file = await asyncio.wait_for(client.upload_file(avatar_path), timeout=20)
-            result = await asyncio.wait_for(
-                client(functions.photos.UploadProfilePhotoRequest(file=file)),
-                timeout=20
-            )
-            print("Аватар обновлён")
-            print(result)
-        except asyncio.TimeoutError:
-            print("Ошибка: загрузка или установка аватара заняла больше 20 секунд и была прервана")
+        # Получаем все фото профиля
+        photos = await client.get_profile_photos('me')
 
-# ===== Запуск =====
+        # Удаляем все старые фото
+        if photos.total > 0:
+            await client(functions.photos.DeletePhotosRequest(id=photos))
+
+        # Загружаем новое фото
+        file = await asyncio.wait_for(client.upload_file(avatar_path), timeout=20)
+        result = await asyncio.wait_for(
+            client(functions.photos.UploadProfilePhotoRequest(file=file)),
+            timeout=20
+        )
+        print("Аватар обновлён")
+        print(result)
+
 asyncio.run(main())
+
