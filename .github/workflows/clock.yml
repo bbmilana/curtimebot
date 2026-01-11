@@ -3,6 +3,7 @@ name: Clock Avatar
 on:
   schedule:
     - cron: "* * * * *"  # каждая минута по UTC
+  workflow_dispatch:     # ручной запуск один раз
 
 jobs:
   update-avatar:
