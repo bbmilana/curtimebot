@@ -2,7 +2,7 @@ name: Clock Avatar
 
 on:
   schedule:
-    - cron: "*/5 * * * *"  # запуск каждые 5 минут (GitHub Actions бесплатно не всегда каждую минуту)
+    - cron: "*/30 * * * *"  # запуск каждые 5 минут (GitHub Actions бесплатно не всегда каждую минуту)
   workflow_dispatch:       # ручной запуск
 
 jobs:
