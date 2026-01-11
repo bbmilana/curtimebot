@@ -34,31 +34,41 @@ draw.text(((SIZE - w) / 2, (SIZE - h) / 2), t, fill=(255, 255, 255), font=font)
 
 avatar_path = "avatar.png"
 img.save(avatar_path)
-print(f"PNG создан: {avatar_path}, размер: {img.size}, время: {t}")
+print(f"[INFO] PNG создан: {avatar_path}, размер: {img.size}, время: {t}")
 
-# ===== Асинхронная функция с удалением старых фото =====
 async def main():
-    async with TelegramClient(StringSession(session), api_id, api_hash) as client:
-        # 1️⃣ Получаем все фото профиля
-        photos = await client.get_profile_photos('me')
+    try:
+        async with TelegramClient(StringSession(session), api_id, api_hash) as client:
+            print("[INFO] TelegramClient запущен")
 
-        # 2️⃣ Удаляем все старые фото
-        if photos.total > 0:
-            await client(functions.photos.DeletePhotosRequest(id=photos))
-            print(f"Удалено старых фото: {photos.total}")
+            # ===== Получаем все фото профиля =====
+            photos = await client.get_profile_photos('me')
+            print(f"[INFO] Всего фото профиля: {photos.total}")
 
-        # 3️⃣ Загружаем новое фото
-        try:
-            file = await asyncio.wait_for(client.upload_file(avatar_path), timeout=20)
-            result = await asyncio.wait_for(
-                client(functions.photos.UploadProfilePhotoRequest(file=file)),
-                timeout=20
-            )
-            print("Аватар обновлён")
-        except asyncio.TimeoutError:
-            print("Ошибка: загрузка или установка аватара заняла больше 20 секунд и была прервана")
+            # ===== Удаляем старые фото =====
+            if photos.total > 0:
+                await client(functions.photos.DeletePhotosRequest(id=photos))
+                print(f"[INFO] Удалено старых фото: {photos.total}")
 
-        # 4️⃣ Лог времени запуска для проверки
-        print(f"Workflow сработал: {datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC")
+            # ===== Пауза для гарантии готовности файла =====
+            await asyncio.sleep(2)
 
+            # ===== Загружаем новое фото =====
+            try:
+                file = await client.upload_file(avatar_path)
+                print(f"[INFO] PNG файл загружен: {avatar_path}")
+
+                result = await client(functions.photos.UploadProfilePhotoRequest(file=file))
+                print(f"[SUCCESS] Аватар обновлён: {datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC")
+
+            except Exception as e:
+                print(f"[ERROR] Не удалось загрузить аватар: {e}")
+
+    except Exception as e:
+        print(f"[ERROR] Ошибка TelegramClient: {e}")
+
+    finally:
+        print(f"[INFO] Workflow завершён: {datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC")
+
+# ===== Запуск =====
 asyncio.run(main())
