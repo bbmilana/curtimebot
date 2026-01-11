@@ -1,6 +1,7 @@
 import asyncio
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
+import pytz
 from telethon import TelegramClient, functions
 from telethon.sessions import StringSession
 import os
@@ -12,11 +13,15 @@ session = os.environ["SESSION_STRING"]
 
 SIZE = 512
 
-# ===== Создаем PNG аватарку без прозрачности =====
+# ===== Кыргызстанский часовой пояс =====
+kst = pytz.timezone("Asia/Bishkek")
+now = datetime.now(kst)
+t = now.strftime("%H:%M")
+
+# ===== Создаем PNG аватарку =====
 img = Image.new("RGB", (SIZE, SIZE), color=(0, 0, 0))  # черный фон
 draw = ImageDraw.Draw(img)
 
-t = datetime.now().strftime("%H:%M")
 try:
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 120)
 except:
@@ -29,7 +34,7 @@ draw.text(((SIZE - w) / 2, (SIZE - h) / 2), t, fill=(255, 255, 255), font=font)
 
 avatar_path = "avatar.png"
 img.save(avatar_path)
-print(f"PNG создан: {avatar_path}, размер: {img.size}")
+print(f"PNG создан: {avatar_path}, размер: {img.size}, время: {t}")
 
 # ===== Асинхронная функция для Telethon =====
 async def main():
